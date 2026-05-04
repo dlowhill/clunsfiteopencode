@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cluns Fite — Вход</title>
+    <style>
+        * {
+            user-select: none;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0f1e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+        }
+        .login-container, .game-container {
+            background: #1a2a1f;
+            border-radius: 32px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 3px solid #ffcc44;
+            width: 380px;
+        }
+        .login-container h2 {
+            color: #ffec99;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #2d3e2b;
+            border: 2px solid #ffaa33;
+            border-radius: 40px;
+            color: #ffec99;
+            font-family: monospace;
+            font-size: 1rem;
+            outline: none;
+        }
+        input::placeholder {
+            color: #aa9966;
+        }
+        button {
+            width: 100%;
+            background: #5a3e1a;
+            border: none;
+            color: #ffdd99;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            margin-top: 16px;
+            box-shadow: 0 4px 0 #2a1e05;
+            transition: 0.05s linear;
+            cursor: pointer;
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #2a1e05;
+        }
+        .error {
+            color: #ff8866;
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.8rem;
+        }
+        .hidden {
+            display: none;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 20px;
+            background: #2d3e2b;
+            box-shadow: inset 0 0 0 2px #ffcc88, 0 0 0 4px #442200;
+        }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .panel {
+            background: #000000aa;
+            backdrop-filter: blur(4px);
+            padding: 8px 16px;
+            border-radius: 60px;
+            color: #ffec99;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: 1px solid #ffaa33;
+        }
+        .badge {
+            font-size: 0.75rem;
+            background: #220033aa;
+        }
+        #logoutBtn {
+            background: #4a2a1a;
+            width: auto;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ЭКРАН ВХОДА -->
+<div id="loginScreen" class="login-container">
+    <h2>🤡 CLUNS FITE</h2>
+    <input type="email" id="emailInput" placeholder="Почта" autocomplete="off">
+    <input type="password" id="passwordInput" placeholder="Пароль">
+    <button id="loginBtn">ВОЙТИ</button>
+    <div id="loginError" class="error"></div>
+</div>
+
+<!-- ЭКРАН ИГРЫ (скрыт сначала) -->
+<div id="gameScreen" class="game-container hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div class="panel" style="padding: 4px 12px;">👤 <span id="userEmailDisplay"></span></div>
+        <button id="logoutBtn">🚪 ВЫЙТИ</button>
+    </div>
+    <canvas id="gameCanvas" width="380" height="500"></canvas>
+    <div class="info">
+        <div class="panel">❤️ HP: <span id="hpValue">3</span></div>
+        <div class="panel">🤡 Счёт: <span id="scoreValue">0</span></div>
+        <button id="resetBtn">⚡ РЕСТАРТ</button>
+    </div>
+    <div class="info badge">
+        <div class="panel">🔫 ТЫКАТЬ ПО ВРАГАМ (БОТАМ)</div>
+        <div class="panel">🤡 ИГРОК vs БОТ</div>
+    </div>
+</div>
+
+<script>
+    // ==============================================
+    // 🔐 АВТОРИЗАЦИЯ — МЕНЯЙ ЗДЕСЬ ПОЧТУ И ПАРОЛЬ
+    // ==============================================
+    const VALID_EMAIL = "dlow@cluns.com";
+    const VALID_PASSWORD = "cluns123";
+    // ==============================================
+
+    // Элементы
+    const loginScreen = document.getElementById('loginScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
+
+    // Проверяем, залогинен ли уже (localStorage)
+    let isLoggedIn = localStorage.getItem('cluns_logged_in') === 'true';
+    let currentUserEmail = localStorage.getItem('cluns_user_email') || '';
+
+    function showLogin() {
+        loginScreen.classList.remove('hidden');
+        gameScreen.classList.add('hidden');
+        emailInput.value = '';
+        passwordInput.value = '';
+        loginError.innerText = '';
+    }
+
+    function showGame(email) {
+        currentUserEmail = email;
+        localStorage.setItem('cluns_logged_in', 'true');
+        localStorage.setItem('cluns_user_email', email);
+        userEmailDisplay.innerText = email.split('@')[0];
+        loginScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        // инициализируем игру, если ещё не создана
+        if (typeof initGame === 'function') {
+            initGame();
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('cluns_logged_in');
+        localStorage.removeItem('cluns_user_email');
+        isLoggedIn = false;
+        currentUserEmail = '';
+        showLogin();
+        // останавливаем игру если нужно
+        if (typeof gameOver !== 'undefined') {
+            // просто перезапустим экран
+        }
+    }
+
+    loginBtn.addEventListener('click', () => {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+        if (email === VALID_EMAIL && password === VALID_PASSWORD) {
+            showGame(email);
+        } else {
+            loginError.innerText = '❌ Неверная почта или пароль';
+        }
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        logout();
+    });
+
+    // Если уже залогинен — сразу в игру
+    if (isLoggedIn && currentUserEmail) {
+        showGame(currentUserEmail);
+    } else {
+        showLogin();
+    }
+
+    // ========== ВСЯ ИГРА (ИГРОК vs БОТ) ==========
+    let canvas, ctx, CW, CH;
+    let player, score, gameOverFlag, enemies, spawnCounter;
+    let mouseX, mouseY;
+    let animationId = null;
+    let gameInitialized = false;
+
+    function initGame() {
+        if (gameInitialized) return;
+        gameInitialized = true;
+        
+        canvas = document.getElementById('gameCanvas');
+        ctx = canvas.getContext('2d');
+        CW = 380;
+        CH = 500;
+        
+        player = {
+            x: CW/2,
+            y: CH - 70,
+            radius: 16,
+            hp: 3,
+            invincible: 0
+        };
+        score = 0;
+        gameOverFlag = false;
+        enemies = [];
+        spawnCounter = 0;
+        mouseX = player.x;
+        mouseY = player.y;
+        
+        function clamp(value, min, max) {
+            return Math.min(max, Math.max(min, value));
+        }
+        
+        function spawnEnemy() {
+            if (gameOverFlag) return;
+            let radius = 12 + Math.random() * 8;
+            enemies.push({
+                x: 20 + Math.random() * (CW - 40),
+                y: -radius,
+                radius: radius,
+                speed: 0.8 + Math.random() * 1.5,
+                hp: 1,
+                color: `hsl(${Math.random() * 60 + 20}, 70%, 55%)`,
+                damage: 1,
+                points: 10
+            });
+        }
+        
+        function updateGame() {
+            if (gameOverFlag) return;
+            
+            player.x = clamp(mouseX, player.radius + 5, CW - player.radius - 5);
+            player.y = clamp(mouseY, player.radius + 20, CH - player.radius - 10);
+            
+            if (player.invincible > 0) player.invincible--;
+            
+            for (let i = 0; i < enemies.length; i++) {
+                const e = enemies[i];
+                e.y += e.speed;
+                const dx = player.x - e.x;
+                const dy = player.y - e.y;
+                const dist = Math.hypot(dx, dy);
+                const minDist = player.radius + e.radius;
+                if (dist < minDist && player.invincible === 0 && !gameOverFlag) {
+                    player.hp -= e.damage;
+                    player.invincible = 20;
+                    if (player.hp <= 0) {
+                        player.hp = 0;
+                        gameOverFlag = true;
+                    }
+                    if (minDist > 0) {
+                        const angle = Math.atan2(dy, dx);
+                        const overlap = minDist - dist;
+                        e.x -= Math.cos(angle) * overlap;
+                        e.y -= Math.sin(angle) * overlap;
+                    }
+                }
+            }
+            
+            enemies = enemies.filter(e => {
+                if (e.y + e.radius > CH + 50) return false;
+                if (e.y + e.radius < -50) return false;
+                return e.hp > 0;
+            });
+            
+            const SPAWN_RATE = 28;
+            spawnCounter++;
+            if (spawnCounter >= SPAWN_RATE && !gameOverFlag) {
+                spawnCounter = 0;
+                let howMany = Math.min(2, 1 + Math.floor(Math.random() * 3));
+                for (let i = 0; i < howMany; i++) spawnEnemy();
+            }
+            if (score > 15 && Math.random() < 0.02 && !gameOverFlag) spawnEnemy();
+        }
+        
+        function handleTap(e) {
+            if (gameOverFlag) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let tapX, tapY;
+            if (e.touches) {
+                const touch = e.touches[0];
+                tapX = (touch.clientX - rect.left) * scaleX;
+                tapY = (touch.clientY - rect.top) * scaleY;
+                e.preventDefault();
+            } else {
+                tapX = (e.clientX - rect.left) * scaleX;
+                tapY = (e.clientY - rect.top) * scaleY;
+            }
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const e = enemies[i];
+                const dx = tapX - e.x;
+                const dy = tapY - e.y;
+                if (Math.hypot(dx, dy) < e.radius + 10) {
+                    enemies.splice(i, 1);
+                    score += 10;
+                    break;
+                }
+            }
+        }
+        
+        function updatePointer(e) {
+            if (gameOverFlag) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX, clientY;
+            if (e.touches) {
+                const touch = e.touches[0];
+                clientX = touch.clientX;
+                clientY = touch.clientY;
+                e.preventDefault();
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            let canvasX = (clientX - rect.left) * scaleX;
+            let canvasY = (clientY - rect.top) * scaleY;
+            canvasX = clamp(canvasX, 8, CW - 8);
+            canvasY = clamp(canvasY, 40, CH - 20);
+            mouseX = canvasX;
+            mouseY = canvasY;
+        }
+        
+        function resetGame() {
+            gameOverFlag = false;
+            player.hp = 3;
+            player.invincible = 0;
+            score = 0;
+            enemies = [];
+            player.x = CW/2;
+            player.y = CH - 70;
+            mouseX = player.x;
+            mouseY = player.y;
+            spawnCounter = 5;
+            for (let i = 0; i < 2; i++) spawnEnemy();
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, CW, CH);
+            ctx.fillStyle = "#2b4423";
+            ctx.fillRect(0, 0, CW, CH);
+            for (let i = 0; i < 60; i++) {
+                ctx.fillStyle = `rgba(80, 60, 30, ${Math.random() * 0.3})`;
+                ctx.fillRect(Math.random() * CW, Math.random() * CH, 2 + Math.random() * 4, 2 + Math.random() * 8);
+            }
+            for (let e of enemies) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                ctx.fillStyle = e.color;
+                ctx.fill();
+                ctx.strokeStyle = "#000000";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = "#FFFFFF";
+                ctx.beginPath();
+                ctx.arc(e.x - e.radius * 0.3, e.y - e.radius * 0.2, e.radius * 0.2, 0, Math.PI * 2);
+                ctx.arc(e.x + e.radius * 0.3, e.y - e.radius * 0.2, e.radius * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#000";
+                ctx.beginPath();
+                ctx.arc(e.x - e.radius * 0.3, e.y - e.radius * 0.25, e.radius * 0.08, 0, Math.PI * 2);
+                ctx.arc(e.x + e.radius * 0.3, e.y - e.radius * 0.25, e.radius * 0.08, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y + e.radius * 0.2, e.radius * 0.4, 0.05, Math.PI - 0.05);
+                ctx.strokeStyle = "#660000";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.save();
+            if (player.invincible > 0 && (Math.floor(Date.now() / 60) % 2 === 0)) ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#ff66cc";
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(player.x - 6, player.y - 4, 4, 0, Math.PI * 2);
+            ctx.arc(player.x + 6, player.y - 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#331100";
+            ctx.beginPath();
+            ctx.arc(player.x - 6, player.y - 5, 2, 0, Math.PI * 2);
+            ctx.arc(player.x + 6, player.y - 5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#aa4422";
+            ctx.beginPath();
+            ctx.ellipse(player.x, player.y + 5, 8, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ff0000";
+            ctx.beginPath();
+            ctx.arc(player.x, player.y + 2, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            if (gameOverFlag) {
+                ctx.font = "bold 26monospace";
+                ctx.fillStyle = "#FFBB88";
+                ctx.fillText("GAME OVER", CW / 2 - 95, CH / 2 - 40);
+                ctx.font = "16monospace";
+                ctx.fillStyle = "#FFDDAA";
+                ctx.fillText("нажми РЕСТАРТ", CW / 2 - 70, CH / 2 + 20);
+            }
+            document.getElementById('hpValue').innerText = player.hp;
+            document.getElementById('scoreValue').innerText = score;
+        }
+        
+        function gameLoop() {
+            updateGame();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function attachEvents() {
+            canvas.addEventListener('mousemove', updatePointer);
+            canvas.addEventListener('touchmove', updatePointer, { passive: false });
+            canvas.addEventListener('touchstart', (e) => {
+                updatePointer(e);
+                handleTap(e);
+                e.preventDefault();
+            });
+            canvas.addEventListener('mousedown', handleTap);
+            canvas.addEventListener('click', (e) => {
+                if (e.button === 0) handleTap(e);
+            });
+            document.getElementById('resetBtn').addEventListener('click', resetGame);
+            document.getElementById('resetBtn').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                resetGame();
+            });
+        }
+        
+        resetGame();
+        attachEvents();
+        if (animationId) cancelAnimationFrame(animationId);
+        gameLoop();
+    }
+    
+    // если игра показана — запускаем
+    if (!gameScreen.classList.contains('hidden')) {
+        initGame();
+    }
+</script>
+</body>
+</html>
