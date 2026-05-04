@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cluns Fite</title>
+    <style>
+        * {
+            user-select: none;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0f1e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+        }
+        
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a2a1f 0%, #0a0f1e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        .splash-content {
+            text-align: center;
+            animation: fadeInUp 1s ease;
+        }
+        .splash-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #ffcc44;
+            text-shadow: 0 0 20px #ff6600, 0 0 40px #ff3300;
+            letter-spacing: 4px;
+            margin-bottom: 16px;
+        }
+        .splash-subtitle {
+            font-size: 1.2rem;
+            color: #ffaa66;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+        }
+        .splash-company {
+            font-size: 0.9rem;
+            color: #88aaff;
+            margin-top: 40px;
+            border-top: 1px solid #ffaa33;
+            display: inline-block;
+            padding-top: 12px;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+        .splash-loader {
+            width: 40px;
+            height: 40px;
+            margin: 20px auto 0;
+            border: 3px solid #ffaa33;
+            border-top-color: #ff4400;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .login-container, .menu-container, .game-container, .search-container, .result-container, .fighters-container {
+            background: #1a2a1f;
+            border-radius: 32px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border: 3px solid #ffcc44;
+            width: 380px;
+        }
+        h2, h3 {
+            color: #ffec99;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #2d3e2b;
+            border: 2px solid #ffaa33;
+            border-radius: 40px;
+            color: #ffec99;
+            font-family: monospace;
+            font-size: 1rem;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            background: #5a3e1a;
+            border: none;
+            color: #ffdd99;
+            font-family: monospace;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            margin-top: 16px;
+            box-shadow: 0 4px 0 #2a1e05;
+            transition: 0.05s linear;
+            cursor: pointer;
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #2a1e05;
+        }
+        .error {
+            color: #ff8866;
+            text-align: center;
+            margin-top: 12px;
+        }
+        .hidden {
+            display: none;
+        }
+        .stats {
+            background: #000000aa;
+            padding: 12px;
+            border-radius: 20px;
+            margin: 12px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .stat {
+            text-align: center;
+            color: #ffec99;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffaa33;
+        }
+        .arena-badge {
+            background: #442200;
+            padding: 8px;
+            border-radius: 20px;
+            text-align: center;
+            margin: 12px 0;
+            color: #ffcc88;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 20px;
+            background: #2d3e2b;
+            box-shadow: inset 0 0 0 2px #ffcc88, 0 0 0 4px #442200;
+        }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .panel {
+            background: #000000aa;
+            backdrop-filter: blur(4px);
+            padding: 8px 16px;
+            border-radius: 60px;
+            color: #ffec99;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: 1px solid #ffaa33;
+        }
+        .search-text {
+            text-align: center;
+            color: #ffcc88;
+            font-size: 1.2rem;
+            margin: 20px 0;
+        }
+        .timer {
+            font-size: 2rem;
+            text-align: center;
+            color: #ffaa33;
+        }
+        .result-text {
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 20px 0;
+        }
+        .win-text { color: #88ff88; }
+        .lose-text { color: #ff8888; }
+        
+        .fighter-card {
+            background: #2d3e2b;
+            border-radius: 20px;
+            padding: 16px;
+            margin: 12px 0;
+            border: 2px solid #ffaa33;
+            text-align: center;
+        }
+        .fighter-name {
+            font-size: 1.5rem;
+            color: #ffcc44;
+            font-weight: bold;
+        }
+        .fighter-status {
+            font-size: 1rem;
+            margin-top: 8px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .locked {
+            background: #4a2a2a;
+            color: #ff8888;
+        }
+        .unlocked {
+            background: #2a4a2a;
+            color: #88ff88;
+        }
+        .fighter-desc {
+            margin-top: 12px;
+            color: #ffcc99;
+            font-size: 0.9rem;
+        }
+        .back-btn {
+            background: #4a2a1a;
+            margin-top: 8px;
+        }
+        .ability-badge {
+            background: #2a2a4a;
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="splashScreen" class="splash-screen">
+    <div class="splash-content">
+        <div class="splash-title">CLUNS FITE</div>
+        <div class="splash-subtitle">⚔️ БИТВА КЛОУНОВ ⚔️</div>
+        <div class="splash-loader"></div>
+        <div class="splash-company">DlowHill</div>
+    </div>
+</div>
+
+<div id="loginScreen" class="login-container hidden">
+    <h2>🤡 CLUNS FITE</h2>
+    <input type="text" id="emailInput" placeholder="Почта" autocomplete="off">
+    <input type="password" id="passwordInput" placeholder="Пароль">
+    <button id="loginBtn">ВОЙТИ</button>
+    <div id="loginError" class="error"></div>
+</div>
+
+<div id="menuScreen" class="menu-container hidden">
+    <h2>🤡 CLUNS FITE</h2>
+    <div class="stats">
+        <div class="stat">
+            <div>🏆 ПОБЕДЫ</div>
+            <div class="stat-value" id="winsValue">0</div>
+        </div>
+        <div class="stat">
+            <div>🎪 АРЕНА</div>
+            <div class="stat-value" id="arenaValue">1</div>
+        </div>
+    </div>
+    <div class="arena-badge" id="arenaName">⚔️ НАЧАЛЬНАЯ АРЕНА</div>
+    <button id="playBtn">🔍 ИГРАТЬ</button>
+    <button id="fightersBtn">🥊 БОЙЦЫ</button>
+    <button id="menuLogoutBtn" style="background:#4a2a1a; margin-top:8px;">🚪 ВЫЙТИ</button>
+</div>
+
+<div id="fightersScreen" class="fighters-container hidden">
+    <h2>🥊 БОЙЦЫ</h2>
+    <div id="fightersList"></div>
+    <button id="backToMenuBtn" class="back-btn">🏠 В МЕНЮ</button>
+</div>
+
+<div id="searchScreen" class="search-container hidden">
+    <h3>🔍 ПОИСК СОПЕРНИКА...</h3>
+    <div class="search-text">Cluns Fite</div>
+    <div class="timer" id="searchTimer">5</div>
+    <div class="search-text">⬅️ Ожидание...</div>
+</div>
+
+<div id="resultScreen" class="result-container hidden">
+    <h2 id="resultTitle">РЕЗУЛЬТАТ</h2>
+    <div class="result-text" id="resultMessage"></div>
+    <button id="resultOkBtn">В МЕНЮ</button>
+</div>
+
+<div id="gameScreen" class="game-container hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <div class="panel" style="padding: 4px 12px;">👤 <span id="userEmailDisplay"></span></div>
+        <button id="gameExitBtn" style="width:auto; padding:6px 12px; font-size:0.8rem;">🏠 МЕНЮ</button>
+    </div>
+    <canvas id="gameCanvas" width="380" height="500"></canvas>
+    <div class="info">
+        <div class="panel">❤️ ЖИЗНИ: <span id="hpValue">5</span></div>
+        <div class="panel">🤡 СЧЁТ: <span id="scoreValue">0</span></div>
+    </div>
+    <div class="info badge">
+        <div class="panel">🔫 ТЫКАЙ ПО ВРАГАМ</div>
+        <div class="panel" id="fighterNameDisplay">🤡 КЛОУН</div>
+    </div>
+</div>
+
+<script>
+    // =====================================================
+    // ОСНОВНОЙ АККАУНТ
+    // =====================================================
+    const ENC_EMAIL_B64 = "ZGxvd0BjbHVucy5jb20=";
+    const ENC_PASS_B64 = "Y2x1bnMxMjM=";
+    const MAIN_EMAIL = atob(ENC_EMAIL_B64);
+    const MAIN_PASS = atob(ENC_PASS_B64);
+    
+    // =====================================================
+    // ТИХАЯ ЗАГРУЗКА ИЗ ФАЙЛА
+    // =====================================================
+    let externalAccount = null;
+    
+    async function loadExternalAccount() {
+        try {
+            const response = await fetch('dlowhill.dlwhll');
+            if (!response.ok) return;
+            const text = await response.text();
+            const parts = text.trim().split(':');
+            if (parts.length >= 3) {
+                externalAccount = {
+                    email: parts[0],
+                    password: parts[1],
+                    wins: parseInt(parts[2]) || 0
+                };
+            }
+        } catch(e) {}
+    }
+    
+    // =====================================================
+    // ДАННЫЕ БОЙЦОВ
+    // =====================================================
+    // Шлюк: 500 побед, +3 жизни, +4 радиус
+    // Дуся: 50 побед, +2 к победам за матч
+    
+    let playerWins = 0;
+    let playerArena = 1;
+    let currentUserEmail = '';
+    let currentGame = null;
+    let gameInitialized = false;
+    let searchInterval = null;
+    let currentFighter = 'default';
+    let isExternalUser = false;
+    
+    // Элементы DOM
+    const splashScreen = document.getElementById('splashScreen');
+    const loginScreen = document.getElementById('loginScreen');
+    const menuScreen = document.getElementById('menuScreen');
+    const fightersScreen = document.getElementById('fightersScreen');
+    const searchScreen = document.getElementById('searchScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const resultScreen = document.getElementById('resultScreen');
+    
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const menuLogoutBtn = document.getElementById('menuLogoutBtn');
+    const gameExitBtn = document.getElementById('gameExitBtn');
+    const playBtn = document.getElementById('playBtn');
+    const fightersBtn = document.getElementById('fightersBtn');
+    const backToMenuBtn = document.getElementById('backToMenuBtn');
+    const resultOkBtn = document.getElementById('resultOkBtn');
+    const resultMessage = document.getElementById('resultMessage');
+    const resultTitle = document.getElementById('resultTitle');
+    const userEmailDisplay = document.getElementById('userEmailDisplay');
+    const winsSpan = document.getElementById('winsValue');
+    const arenaSpan = document.getElementById('arenaValue');
+    const arenaNameSpan = document.getElementById('arenaName');
+    const searchTimerSpan = document.getElementById('searchTimer');
+    const fighterNameDisplay = document.getElementById('fighterNameDisplay');
+    
+    function isShlyukUnlocked() {
+        return playerWins >= 500;
+    }
+    
+    function isDusyaUnlocked() {
+        return playerWins >= 50;
+    }
+    
+    function getBonusWinsPerMatch() {
+        if (currentFighter === 'dusya' && isDusyaUnlocked()) {
+            return 1; // Дуся дает +1 дополнительную победу
+        }
+        return 0;
+    }
+    
+    function updateMenuStats() {
+        winsSpan.innerText = playerWins;
+        arenaSpan.innerText = playerArena;
+        if (playerArena === 1) arenaNameSpan.innerText = '⚔️ НАЧАЛЬНАЯ АРЕНА';
+        else if (playerArena === 2) arenaNameSpan.innerText = '🎪 ЦИРКОВАЯ АРЕНА';
+        else arenaNameSpan.innerText = '🤡 БЕЗУМНАЯ АРЕНА';
+    }
+    
+    function updateArenaByWins() {
+        if (playerWins >= 15) playerArena = 3;
+        else if (playerWins >= 5) playerArena = 2;
+        else playerArena = 1;
+    }
+    
+    function renderFighters() {
+        const container = document.getElementById('fightersList');
+        if (!container) return;
+        
+        const isShlyukUnlockedFlag = isShlyukUnlocked();
+        const isDusyaUnlockedFlag = isDusyaUnlocked();
+        
+        let html = `
+            <!-- ШЛЮК -->
+            <div class="fighter-card">
+                <div class="fighter-name">🔪 ШЛЮК</div>
+                <div class="fighter-status ${isShlyukUnlockedFlag ? 'unlocked' : 'locked'}">
+                    ${isShlyukUnlockedFlag ? '✅ РАЗБЛОКИРОВАН' : '🔒 ЗАБЛОКИРОВАН'}
+                </div>
+                <div class="fighter-desc">🔥 Легендарный боец. Разблокируется на 500 побед!</div>
+                <div class="fighter-desc">📊 Требуется побед: 500</div>
+                <div class="fighter-desc">❤️ +3 жизни | 📏 +4 радиус | 🎨 Розовый цвет</div>
+            </div>
+            
+            <!-- ДУСЯ -->
+            <div class="fighter-card">
+                <div class="fighter-name">🦆 ДУСЯ</div>
+                <div class="fighter-status ${isDusyaUnlockedFlag ? 'unlocked' : 'locked'}">
+                    ${isDusyaUnlockedFlag ? '✅ РАЗБЛОКИРОВАН' : '🔒 ЗАБЛОКИРОВАН'}
+                </div>
+                <div class="fighter-desc">🌟 Уникальный боец. Разблокируется на 50 побед!</div>
+                <div class="fighter-desc">📊 Требуется побед: 50</div>
+                <div class="fighter-desc">✨ Способность: каждая победа дает +1 дополнительную победу!</div>
+                <div class="ability-badge">⚡ +1 ПОБЕДА ЗА МАТЧ</div>
+            </div>
+        `;
+        
+        if (isShlyukUnlockedFlag || isDusyaUnlockedFlag) {
+            html += `<div style="margin-top: 16px; text-align: center; color: #88ff88;">⚡ ВЫБЕРИ БОЙЦА ⚡</div>`;
+            
+            if (isShlyukUnlockedFlag) {
+                html += `<button id="selectShlyukBtn" style="background:#6a2e5a; margin-top:8px;">🔪 ВЫБРАТЬ ШЛЮКА</button>`;
+            }
+            if (isDusyaUnlockedFlag) {
+                html += `<button id="selectDusyaBtn" style="background:#2a5a4a; margin-top:8px;">🦆 ВЫБРАТЬ ДУСЮ</button>`;
+            }
+            html += `<button id="selectDefaultBtn" style="background:#4a3e2a; margin-top:8px;">🤡 ВЫБРАТЬ ОБЫЧНОГО</button>`;
+        } else {
+            const neededShlyuk = 500 - playerWins;
+            const neededDusya = 50 - playerWins;
+            html += `
+                <div style="margin-top: 16px; text-align: center; color: #ffaa66;">
+                    ⭐ До разблокировки ДУСИ: ${neededDusya} побед<br>
+                    ⭐ До разблокировки ШЛЮКА: ${neededShlyuk} побед
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        if (isShlyukUnlockedFlag) {
+            document.getElementById('selectShlyukBtn')?.addEventListener('click', () => {
+                currentFighter = 'shlyuk';
+                localStorage.setItem('cluns_fighter', 'shlyuk');
+                fighterNameDisplay.innerText = '🔪 ШЛЮК';
+                renderFighters();
+            });
+        }
+        if (isDusyaUnlockedFlag) {
+            document.getElementById('selectDusyaBtn')?.addEventListener('click', () => {
+                currentFighter = 'dusya';
+                localStorage.setItem('cluns_fighter', 'dusya');
+                fighterNameDisplay.innerText = '🦆 ДУСЯ';
+                renderFighters();
+            });
+        }
+        document.getElementById('selectDefaultBtn')?.addEventListener('click', () => {
+            currentFighter = 'default';
+            localStorage.setItem('cluns_fighter', 'default');
+            fighterNameDisplay.innerText = '🤡 КЛОУН';
+            renderFighters();
+        });
+    }
+    
+    function showFighters() {
+        renderFighters();
+        menuScreen.classList.add('hidden');
+        fightersScreen.classList.remove('hidden');
+    }
+    
+    function addWin() {
+        let winsToAdd = 1;
+        if (currentFighter === 'dusya' && isDusyaUnlocked()) {
+            winsToAdd = 2;
+        }
+        playerWins += winsToAdd;
+        updateArenaByWins();
+        localStorage.setItem('cluns_wins', playerWins);
+        localStorage.setItem('cluns_arena', playerArena);
+        updateMenuStats();
+        
+        // Проверка разблокировки Дуси
+        if (playerWins === 50) {
+            setTimeout(() => {
+                alert('🦆 ПОЗДРАВЛЯЮ! 🦆\nТы разблокировал бойца - ДУСЮ!\nТеперь каждая победа дает +1 дополнительную победу!');
+            }, 500);
+        }
+        // Проверка разблокировки Шлюка
+        if (playerWins === 500) {
+            setTimeout(() => {
+                alert('🎉 ПОЗДРАВЛЯЮ! 🎉\nТы разблокировал легендарного бойца - ШЛЮКА!');
+            }, 500);
+        }
+    }
+    
+    function removeWin() {
+        if (playerWins > 0) playerWins--;
+        updateArenaByWins();
+        localStorage.setItem('cluns_wins', playerWins);
+        localStorage.setItem('cluns_arena', playerArena);
+        updateMenuStats();
+    }
+    
+    function showLogin() {
+        loginScreen.classList.remove('hidden');
+        menuScreen.classList.add('hidden');
+        fightersScreen.classList.add('hidden');
+        searchScreen.classList.add('hidden');
+        gameScreen.classList.add('hidden');
+        resultScreen.classList.add('hidden');
+        if (searchInterval) clearInterval(searchInterval);
+        emailInput.value = '';
+        passwordInput.value = '';
+        loginError.innerText = '';
+    }
+    
+    function showMenu() {
+        if (currentGame && typeof currentGame.destroy === 'function') {
+            currentGame.destroy();
+        }
+        gameInitialized = false;
+        loginScreen.classList.add('hidden');
+        fightersScreen.classList.add('hidden');
+        searchScreen.classList.add('hidden');
+        gameScreen.classList.add('hidden');
+        resultScreen.classList.add('hidden');
+        menuScreen.classList.remove('hidden');
+        updateMenuStats();
+        if (searchInterval) clearInterval(searchInterval);
+        
+        if (currentFighter === 'shlyuk' && isShlyukUnlocked()) {
+            fighterNameDisplay.innerText = '🔪 ШЛЮК';
+        } else if (currentFighter === 'dusya' && isDusyaUnlocked()) {
+            fighterNameDisplay.innerText = '🦆 ДУСЯ (+1 победа за матч)';
+        } else {
+            if ((currentFighter === 'shlyuk' && !isShlyukUnlocked()) || (currentFighter === 'dusya' && !isDusyaUnlocked())) {
+                currentFighter = 'default';
+                localStorage.setItem('cluns_fighter', 'default');
+            }
+            fighterNameDisplay.innerText = '🤡 КЛОУН';
+        }
+    }
+    
+    function showSearch() {
+        menuScreen.classList.add('hidden');
+        searchScreen.classList.remove('hidden');
+        let timer = 5;
+        searchTimerSpan.innerText = timer;
+        if (searchInterval) clearInterval(searchInterval);
+        searchInterval = setInterval(() => {
+            timer--;
+            searchTimerSpan.innerText = timer;
+            if (timer <= 0) {
+                clearInterval(searchInterval);
+                searchInterval = null;
+                startGame();
+            }
+        }, 1000);
+    }
+    
+    function startGame() {
+        searchScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        if (!gameInitialized) {
+            initGameSystem();
+        } else {
+            if (currentGame && typeof currentGame.reset === 'function') {
+                currentGame.reset();
+            }
+        }
+    }
+    
+    function showResult(isWin) {
+        if (currentGame && typeof currentGame.destroy === 'function') {
+            currentGame.destroy();
+        }
+        gameInitialized = false;
+        gameScreen.classList.add('hidden');
+        
+        if (isWin) {
+            addWin();
+            const bonus = getBonusWinsPerMatch();
+            if (bonus > 0) {
+                resultTitle.innerText = '🏆 ПОБЕДА! 🏆';
+                resultMessage.innerText = `+1 ПОБЕДА (+${bonus} от ДУСИ)`;
+            } else {
+                resultTitle.innerText = '🏆 ПОБЕДА! 🏆';
+                resultMessage.innerText = '+1 ПОБЕДА';
+            }
+            resultMessage.className = 'result-text win-text';
+        } else {
+            removeWin();
+            resultTitle.innerText = '💀 ПОРАЖЕНИЕ 💀';
+            resultMessage.innerText = '-1 ПОБЕДА';
+            resultMessage.className = 'result-text lose-text';
+        }
+        resultScreen.classList.remove('hidden');
+    }
+    
+    function logout() {
+        localStorage.removeItem('cluns_logged_in');
+        localStorage.removeItem('cluns_user_email');
+        localStorage.removeItem('cluns_wins');
+        localStorage.removeItem('cluns_arena');
+        localStorage.removeItem('cluns_fighter');
+        playerWins = 0;
+        playerArena = 1;
+        currentFighter = 'default';
+        isExternalUser = false;
+        showLogin();
+    }
+    
+    // ========== ИГРА ==========
+    function initGameSystem() {
+        gameInitialized = true;
+        let canvas = document.getElementById('gameCanvas');
+        let ctx = canvas.getContext('2d');
+        const CW = 380, CH = 500;
+        
+        const isShlyukActive = (currentFighter === 'shlyuk' && isShlyukUnlocked());
+        const isDusyaActive = (currentFighter === 'dusya' && isDusyaUnlocked());
+        
+        let bonusHp = 0;
+        let bonusRadius = 0;
+        let fighterColor = '#ff77dd';
+        let fighterNamePlate = '';
+        
+        if (isShlyukActive) {
+            bonusHp = 3;
+            bonusRadius = 4;
+            fighterColor = '#ff44aa';
+            fighterNamePlate = 'ШЛЮК';
+        } else if (isDusyaActive) {
+            bonusHp = 0;
+            bonusRadius = 2;
+            fighterColor = '#44ffaa';
+            fighterNamePlate = 'ДУСЯ';
+        }
+        
+        let player = { 
+            x: CW/2, 
+            y: CH-70, 
+            radius: 18 + bonusRadius, 
+            hp: 5 + bonusHp, 
+            maxHp: 5 + bonusHp,
+            invincible: 0 
+        };
+        let score = 0;
+        let gameOverFlag = false;
+        let enemies = [];
+        let spawnCounter = 0;
+        let mouseX = player.x, mouseY = player.y;
+        let animationId = null;
+        
+        function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+        
+        function spawnEnemy() {
+            if (gameOverFlag) return;
+            let radius = 10 + Math.random() * 6;
+            enemies.push({
+                x: 20 + Math.random() * (CW-40), y: -radius, radius: radius,
+                speed: 0.5 + Math.random() * 1.0,
+                hp: 1,
+                color: `hsl(${Math.random()*60+20}, 70%, 55%)`, damage: 1, points: 10
+            });
+        }
+        
+        function updateGame() {
+            if (gameOverFlag) return;
+            player.x = clamp(mouseX, player.radius+5, CW-player.radius-5);
+            player.y = clamp(mouseY, player.radius+20, CH-player.radius-10);
+            if (player.invincible > 0) player.invincible--;
+            for (let i=0; i<enemies.length; i++) {
+                let e = enemies[i];
+                e.y += e.speed;
+                let dx = player.x - e.x, dy = player.y - e.y;
+                let dist = Math.hypot(dx, dy);
+                let minDist = player.radius + e.radius;
+                if (dist < minDist && player.invincible===0 && !gameOverFlag) {
+                    player.hp -= e.damage;
+                    player.invincible = 15;
+                    if (player.hp <= 0) {
+                        player.hp = 0;
+                        gameOverFlag = true;
+                    }
+                    if (minDist>0) {
+                        let angle = Math.atan2(dy, dx);
+                        let overlap = minDist - dist;
+                        e.x -= Math.cos(angle)*overlap;
+                        e.y -= Math.sin(angle)*overlap;
+                    }
+                }
+            }
+            enemies = enemies.filter(e => e.y+e.radius < CH+50 && e.y+e.radius > -50 && e.hp>0);
+            spawnCounter++;
+            if (spawnCounter >= 35 && !gameOverFlag) {
+                spawnCounter = 0;
+                let howMany = Math.min(1, 1+Math.floor(Math.random()*2));
+                for(let i=0;i<howMany;i++) spawnEnemy();
+            }
+            if (score>30 && Math.random()<0.01 && !gameOverFlag) spawnEnemy();
+        }
+        
+        function handleTap(e) {
+            if (gameOverFlag) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+            let tapX, tapY;
+            if (e.touches) {
+                let touch = e.touches[0];
+                tapX = (touch.clientX - rect.left)*scaleX;
+                tapY = (touch.clientY - rect.top)*scaleY;
+                e.preventDefault();
+            } else {
+                tapX = (e.clientX - rect.left)*scaleX;
+                tapY = (e.clientY - rect.top)*scaleY;
+            }
+            for(let i=enemies.length-1; i>=0; i--) {
+                let e = enemies[i];
+                if (Math.hypot(tapX-e.x, tapY-e.y) < e.radius+15) {
+                    enemies.splice(i,1);
+                    score += 10;
+                    break;
+                }
+            }
+        }
+        
+        function updatePointer(e) {
+            if (gameOverFlag) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width/rect.width, scaleY = canvas.height/rect.height;
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+                e.preventDefault();
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            let canvasX = (clientX - rect.left)*scaleX;
+            let canvasY = (clientY - rect.top)*scaleY;
+            mouseX = clamp(canvasX, 8, CW-8);
+            mouseY = clamp(canvasY, 40, CH-20);
+        }
+        
+        function checkWinCondition() {
+            if (score >= 50 && !gameOverFlag) {
+                gameOverFlag = true;
+                showResult(true);
+            }
+        }
+        
+        function resetGame() {
+            gameOverFlag = false;
+            const nowIsShlyuk = (currentFighter === 'shlyuk' && isShlyukUnlocked());
+            const nowIsDusya = (currentFighter === 'dusya' && isDusyaUnlocked());
+            let nowBonusHp = nowIsShlyuk ? 3 : 0;
+            let nowBonusRadius = nowIsShlyuk ? 4 : (nowIsDusya ? 2 : 0);
+            player.radius = 18 + nowBonusRadius;
+            player.hp = 5 + nowBonusHp;
+            player.maxHp = 5 + nowBonusHp;
+            player.invincible = 0;
+            score = 0;
+            enemies = [];
+            player.x = CW/2;
+            player.y = CH-70;
+            mouseX = player.x;
+            mouseY = player.y;
+            spawnCounter = 5;
+            for(let i=0;i<1;i++) spawnEnemy();
+        }
+        
+        function draw() {
+            ctx.clearRect(0,0,CW,CH);
+            ctx.fillStyle = "#4a8c3f";
+            ctx.fillRect(0,0,CW,CH);
+            for(let i=0;i<40;i++) {
+                ctx.fillStyle = `rgba(255,220,100,${Math.random()*0.2})`;
+                ctx.fillRect(Math.random()*CW, Math.random()*CH, 3+Math.random()*6, 3+Math.random()*6);
+            }
+            for(let e of enemies) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2);
+                ctx.fillStyle = e.color;
+                ctx.fill();
+                ctx.strokeStyle = "#000";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = "#FFF";
+                ctx.beginPath();
+                ctx.arc(e.x-e.radius*0.3, e.y-e.radius*0.2, e.radius*0.2,0,Math.PI*2);
+                ctx.arc(e.x+e.radius*0.3, e.y-e.radius*0.2, e.radius*0.2,0,Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = "#000";
+                ctx.beginPath();
+                ctx.arc(e.x-e.radius*0.3, e.y-e.radius*0.25, e.radius*0.08,0,Math.PI*2);
+                ctx.arc(e.x+e.radius*0.3, e.y-e.radius*0.25, e.radius*0.08,0,Math.PI*2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(e.x, e.y+e.radius*0.2, e.radius*0.4,0.05,Math.PI-0.05);
+                ctx.strokeStyle = "#600";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.save();
+            if(player.invincible>0 && (Math.floor(Date.now()/60)%2===0)) ctx.globalAlpha=0.6;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius,0,Math.PI*2);
+            ctx.fillStyle = fighterColor;
+            ctx.fill();
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(player.x-6, player.y-4,4,0,Math.PI*2);
+            ctx.arc(player.x+6, player.y-4,4,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = "#310";
+            ctx.beginPath();
+            ctx.arc(player.x-6, player.y-5,2,0,Math.PI*2);
+            ctx.arc(player.x+6, player.y-5,2,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = "#a42";
+            ctx.beginPath();
+            ctx.ellipse(player.x, player.y+5,8,5,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(player.x, player.y+2,4,0,Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.font = "bold 14monospace";
+            ctx.fillStyle = "#FFDD88";
+            ctx.fillText("ЦЕЛЬ: 50 ОЧКОВ", CW-100, 25);
+            if (isShlyukActive) {
+                ctx.fillStyle = "#ff88ff";
+                ctx.fillText("🔪 ШЛЮК АКТИВИРОВАН 🔪", CW-155, 45);
+            } else if (isDusyaActive) {
+                ctx.fillStyle = "#88ffaa";
+                ctx.fillText("🦆 ДУСЯ АКТИВИРОВАНА (+1 победа) 🦆", CW-170, 45);
+            } else {
+                ctx.fillText("⭐ ПОБЕДА ЗАЩИТАНА ⭐", CW-140, 45);
+            }
+            
+            if(gameOverFlag && player.hp <= 0) {
+                showResult(false);
+            }
+            
+            document.getElementById('hpValue').innerText = player.hp;
+            document.getElementById('scoreValue').innerText = score;
+            
+            checkWinCondition();
+        }
+        
+        function gameLoop() {
+            updateGame();
+            draw();
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function attachEvents() {
+            canvas.addEventListener('mousemove', updatePointer);
+            canvas.addEventListener('touchmove', updatePointer, {passive:false});
+            canvas.addEventListener('touchstart', (e)=>{ updatePointer(e); handleTap(e); e.preventDefault();});
+            canvas.addEventListener('mousedown', handleTap);
+        }
+        
+        function destroy() {
+            if(animationId) cancelAnimationFrame(animationId);
+            canvas.removeEventListener('mousemove', updatePointer);
+            canvas.removeEventListener('touchmove', updatePointer);
+            canvas.removeEventListener('touchstart', handleTap);
+            canvas.removeEventListener('mousedown', handleTap);
+        }
+        
+        resetGame();
+        attachEvents();
+        gameLoop();
+        
+        currentGame = { reset: resetGame, destroy: destroy };
+    }
+    
+    // ========== ЗАГРУЗКА СОХРАНЕНИЙ ==========
+    let savedWins = localStorage.getItem('cluns_wins');
+    let savedArena = localStorage.getItem('cluns_arena');
+    let savedFighter = localStorage.getItem('cluns_fighter');
+    
+    if (savedWins) playerWins = parseInt(savedWins);
+    if (savedArena) playerArena = parseInt(savedArena);
+    if (savedFighter) currentFighter = savedFighter;
+    
+    if ((currentFighter === 'shlyuk' && playerWins < 500) || (currentFighter === 'dusya' && playerWins < 50)) {
+        currentFighter = 'default';
+        localStorage.setItem('cluns_fighter', 'default');
+    }
+    
+    updateArenaByWins();
+    
+    function showGameAfterLogin(email, isExternal, externalWins = 0) {
+        currentUserEmail = email;
+        isExternalUser = isExternal;
+        localStorage.setItem('cluns_logged_in', 'true');
+        localStorage.setItem('cluns_user_email', email);
+        userEmailDisplay.innerText = email.split('@')[0];
+        
+        if (isExternal && externalAccount) {
+            playerWins = externalAccount.wins;
+            updateArenaByWins();
+            updateMenuStats();
+        }
+        
+        showMenu();
+    }
+    
+    function checkLoginWithExternal(email, password) {
+        if (email === MAIN_EMAIL && password === MAIN_PASS) {
+            return { success: true, isExternal: false };
+        }
+        if (externalAccount && email === externalAccount.email && password === externalAccount.password) {
+            playerWins = externalAccount.wins;
+            updateArenaByWins();
+            return { success: true, isExternal: true };
+        }
+        return { success: false };
+    }
+    
+    loginBtn.onclick = async () => {
+        await loadExternalAccount();
+        let email = emailInput.value.trim();
+        let pwd = passwordInput.value;
+        
+        const result = checkLoginWithExternal(email, pwd);
+        
+        if (result.success) {
+            showGameAfterLogin(email, result.isExternal);
+        } else {
+            loginError.innerText = '❌ Неверная почта или пароль';
+        }
+    };
+    
+    menuLogoutBtn.onclick = logout;
+    gameExitBtn.onclick = () => {
+        if(currentGame && typeof currentGame.destroy === 'function') currentGame.destroy();
+        gameInitialized = false;
+        showMenu();
+    };
+    playBtn.onclick = () => { showSearch(); };
+    fightersBtn.onclick = () => { showFighters(); };
+    backToMenuBtn.onclick = () => { showMenu(); };
+    resultOkBtn.onclick = () => { showMenu(); };
+    
+    function afterSplash() {
+        let loggedIn = localStorage.getItem('cluns_logged_in') === 'true';
+        let savedEmail = localStorage.getItem('cluns_user_email');
+        
+        if (loggedIn && savedEmail) {
+            currentUserEmail = savedEmail;
+            userEmailDisplay.innerText = currentUserEmail.split('@')[0];
+            showMenu();
+        } else {
+            showLogin();
+        }
+    }
+    
+    loadExternalAccount().then(() => {
+        setTimeout(() => {
+            if (splashScreen && !splashScreen.classList.contains('hidden')) {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.classList.add('hidden');
+                    splashScreen.style.opacity = '';
+                    afterSplash();
+                }, 500);
+            }
+        }, 6000);
+    });
+</script>
+</body>
+</html>
